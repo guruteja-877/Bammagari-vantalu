@@ -37,6 +37,8 @@ export default function RightAuthPanel() {
       );
 
       const data = await response.json();
+      console.log("LOGIN RESPONSE:", data);
+      console.log("JWT TOKEN:", data.token);
 
       if (!response.ok) {
         setError(data.message || "Invalid email or password.");
