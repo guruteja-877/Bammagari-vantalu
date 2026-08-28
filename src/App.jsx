@@ -27,8 +27,10 @@ import BammaSpecial from "./section/BammaSpecial";
 import AboutBamma from "./section/AboutBamma";
 import Offers from "./section/Offers";
 import Contact from "./section/Contact";
+import { AuthProvider } from "./context/AuthContext";
 function App() {
   return (
+    <AuthProvider>
     <Routes>
       {/* Home Page */}
       <Route
@@ -169,7 +171,7 @@ function App() {
   element={<Contact />}
 />
     </Routes>
-
+ </AuthProvider>
   );
 }
 
