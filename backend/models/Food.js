@@ -42,6 +42,15 @@ const foodSchema = new mongoose.Schema(
     rating: {
       type: Number,
       default: 5,
+      min: 0,
+      max: 5,
+    },
+
+    // NEW FIELD
+    spice: {
+      type: String,
+      enum: ["mild", "medium", "spicy", "extra spicy"],
+      default: "medium",
     },
 
     available: {

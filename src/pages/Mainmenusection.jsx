@@ -1,7 +1,3 @@
-
-
-
-
 import Foodimage from "../assets/menuimages/Foodimage.png";
 import Foodimage1 from "../assets/menuimages/Foodimage(1).png";
 import Foodimage2 from "../assets/menuimages/Foodimage(2).png";
@@ -9,78 +5,24 @@ import Foodimage3 from "../assets/menuimages/Foodimage(3).png";
 import Foodimage4 from "../assets/menuimages/Foodimage(4).png";
 import Foodimage5 from "../assets/menuimages/Foodimage(5).png";
 
-const foodItems = [
-  {
-    image: Foodimage,
-    region: "Andhra",
-    name: "Gutti Vankaya Koora",
-    price: "₹180",
-    rating: "4.7",
-    type: "veg",
-    spice: "spicy",
-  },
-  {
-    image: Foodimage1,
-    region: "Telangana",
-    name: "Telangana Kodi Vepudu",
-    price: "₹260",
-    rating: "4.8",
-    type: "non-veg",
-    spice: "spicy",
-  },
-  {
-    image: Foodimage2,
-    region: "Rayalaseema",
-    name: "Gongura Pappu Pachadi",
-    price: "₹120",
-    rating: "4.6",
-    type: "veg",
-    spice: "medium",
-  },
-  {
-    image: Foodimage3,
-    region: "Coastal Andhra",
-    name: "Ghee Neyyi Idli",
-    price: "₹90",
-    rating: "4.5",
-    type: "veg",
-    spice: "mild",
-  },
-  {
-    image: Foodimage4,
-    region: "Nellore",
-    name: "Nellore Chepala Pulusu",
-    price: "₹340",
-    rating: "4.9",
-    type: "non-veg",
-    spice: "spicy",
-  },
-  {
-    image: Foodimage5,
-    region: "Andhra",
-    name: "Pesarattu Upma",
-    price: "₹140",
-    rating: "4.7",
-    type: "veg",
-    spice: "medium",
-  },
-];
+import { useEffect, useState } from "react";
+import { getFoods } from "../services/api";
 
 const regions = [
-  { name: "Andhra", count: 12 },
-  { name: "Rayalaseema", count: 8 },
-  { name: "Konaseema", count: 6 },
-  { name: "Coastal Andhra", count: 9 },
-  { name: "Telangana", count: 11 },
-  { name: "Hyderabad", count: 15 },
+  "Andhra",
+  "Rayalaseema",
+  "Konaseema",
+  "Coastal Andhra",
+  "Telangana",
+  "Hyderabad",
 ];
 
 const spices = ["Mild", "Medium", "Spicy", "Extra Spicy"];
 
 const prices = [
-  { label: "₹0 – ₹200", count: 14 },
-  { label: "₹200 – ₹400", count: 28 },
-  { label: "₹400+", count: 10 },
+  { label: "₹0 – ₹200" },
+  { label: "₹200 – ₹400" },
+  { label: "₹400+" },
 ];
 
 function CheckIcon() {
@@ -184,14 +126,18 @@ function RatingIcon() {
 }
 
 function SpiceIcons({ level }) {
+  const normalizedLevel = String(level || "").toLowerCase();
+
   const count =
-    level === "mild"
+    normalizedLevel === "mild"
       ? 1
-      : level === "medium"
+      : normalizedLevel === "medium"
       ? 2
-      : level === "spicy"
+      : normalizedLevel === "spicy"
       ? 3
-      : 4;
+      : normalizedLevel === "extra spicy"
+      ? 4
+      : 0;
 
   return (
     <div className="flex items-center gap-0.5">
@@ -231,13 +177,22 @@ function FoodCard({ food }) {
         {/* Veg / Non-Veg Badge */}
         <div
           className={`absolute right-3 top-3 flex h-[18px] w-[18px] items-center justify-center rounded-md border-[1.5px] bg-[rgba(0,0,0,0.70)] ${
-            food.type === "veg"
+            food.isVeg
               ? "border-[#2E7D32]"
               : "border-[#C62828]"
           }`}
         >
-          {food.type === "veg" ? <VegIcon /> : <NonVegIcon />}
+          {food.isVeg ? <VegIcon /> : <NonVegIcon />}
         </div>
+
+        {/* Availability */}
+        {!food.available && (
+          <div className="absolute left-3 top-3 rounded-md bg-red-600 px-2 py-1">
+            <p className="font-dMSans text-[10px] font-bold text-white">
+              UNAVAILABLE
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Card Content */}
@@ -252,7 +207,7 @@ function FoodCard({ food }) {
             <RatingIcon />
 
             <p className="font-dMSans text-[13px] font-semibold text-[#F5ECE3]">
-              {food.rating}
+              {food.rating ?? "0"}
             </p>
           </div>
         </div>
@@ -264,11 +219,18 @@ function FoodCard({ food }) {
           </p>
         </div>
 
+        {/* Description */}
+        {food.description && (
+          <p className="w-full overflow-hidden text-ellipsis whitespace-nowrap font-dMSans text-xs text-[#A8978F]">
+            {food.description}
+          </p>
+        )}
+
         {/* Price + Spice + Add */}
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col items-start gap-1">
             <p className="font-dMSans text-lg font-bold text-[#D4A359]">
-              {food.price}
+              ₹{food.price}
             </p>
 
             <SpiceIcons level={food.spice} />
@@ -276,10 +238,21 @@ function FoodCard({ food }) {
 
           <button
             type="button"
-            className="flex items-center gap-1 rounded-lg border border-[#D4A359] bg-[#261D1A] px-4 py-2 transition-colors duration-200 hover:bg-[#D4A359]"
+            disabled={!food.available}
+            className={`flex items-center gap-1 rounded-lg border px-4 py-2 transition-colors duration-200 ${
+              food.available
+                ? "border-[#D4A359] bg-[#261D1A] hover:bg-[#D4A359]"
+                : "cursor-not-allowed border-[#555] bg-[#333] opacity-50"
+            }`}
           >
-            <p className="font-dMSans text-[13px] font-bold text-[#D4A359] hover:text-[#130F0C]">
-              + ADD
+            <p
+              className={`font-dMSans text-[13px] font-bold ${
+                food.available
+                  ? "text-[#D4A359] hover:text-[#130F0C]"
+                  : "text-[#999]"
+              }`}
+            >
+              {food.available ? "+ ADD" : "UNAVAILABLE"}
             </p>
           </button>
         </div>
@@ -287,8 +260,31 @@ function FoodCard({ food }) {
     </div>
   );
 }
-
 export default function Mainmenusection() {
+  const [foodItems, setFoodItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const foods = await getFoods();
+
+        setFoodItems(Array.isArray(foods) ? foods : []);
+      } catch (err) {
+        console.error("Error fetching foods:", err);
+        setError("Failed to load food items.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFoods();
+  }, []);
+
   return (
     <section className="mx-auto flex w-full max-w-[1400px] items-start gap-8 px-5 pb-16 sm:px-8 md:px-12 lg:px-20">
       {/* =========================
@@ -354,19 +350,19 @@ export default function Mainmenusection() {
           <div className="flex w-full flex-col items-start gap-2.5">
             {regions.map((region) => (
               <div
-                key={region.name}
+                key={region}
                 className="flex w-full items-center justify-between"
               >
                 <div className="flex items-center gap-2">
                   <Checkbox />
 
                   <p className="font-dMSans text-sm text-[#A8978F]">
-                    {region.name}
+                    {region}
                   </p>
                 </div>
 
                 <p className="font-dMSans text-xs text-[#A8978F]">
-                  {region.count}
+                  -
                 </p>
               </div>
             ))}
@@ -418,7 +414,9 @@ export default function Mainmenusection() {
                 className="flex w-full items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <Checkbox checked={price.label === "₹200 – ₹400"} />
+                  <Checkbox
+                    checked={price.label === "₹200 – ₹400"}
+                  />
 
                   <p
                     className={`font-dMSans text-sm ${
@@ -432,7 +430,7 @@ export default function Mainmenusection() {
                 </div>
 
                 <p className="font-dMSans text-xs text-[#A8978F]">
-                  {price.count}
+                  -
                 </p>
               </div>
             ))}
@@ -444,14 +442,44 @@ export default function Mainmenusection() {
           FOOD GRID
       ========================== */}
       <div className="flex w-full flex-col gap-6">
-        <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
-          {foodItems.map((food) => (
-            <FoodCard
-              key={food.name}
-              food={food}
-            />
-          ))}
-        </div>
+        {/* Loading */}
+        {loading && (
+          <div className="flex w-full items-center justify-center py-16">
+            <p className="font-dMSans text-sm text-[#F5ECE3]">
+              Loading food items...
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="flex w-full items-center justify-center py-16">
+            <p className="font-dMSans text-sm text-red-400">
+              {error}
+            </p>
+          </div>
+        )}
+
+        {/* No Foods */}
+        {!loading && !error && foodItems.length === 0 && (
+          <div className="flex w-full items-center justify-center py-16">
+            <p className="font-dMSans text-sm text-[#A8978F]">
+              No food items found.
+            </p>
+          </div>
+        )}
+
+        {/* Dynamic Food Cards */}
+        {!loading && !error && foodItems.length > 0 && (
+          <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
+            {foodItems.map((food) => (
+              <FoodCard
+                key={food._id}
+                food={food}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
