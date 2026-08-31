@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   try {
     let token;
 
@@ -21,22 +22,26 @@ const protect = (req, res, next) => {
     }
 
     // Verify Token
-    console.log("Authorization:", req.headers.authorization);
-        console.log("Token:", token);
-        console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Find user from database
+    const user = await User.findById(decoded.id).select("-password");
 
-console.log("Decoded:", decoded);
-    // Save user data in request
-    req.user = decoded;
-    
-    console.log("Passing to controller...");
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Attach user to request
+    req.user = user;
+
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message:  error.message,
+      message: error.message,
     });
   }
 };
