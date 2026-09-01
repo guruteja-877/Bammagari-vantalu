@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const Food = require("../models/Food");
 
+// CREATE FOOD
 const createFood = async (req, res) => {
   try {
     const {
@@ -11,6 +13,7 @@ const createFood = async (req, res) => {
       region,
       isVeg,
       rating,
+      spice,
       available,
     } = req.body;
 
@@ -23,6 +26,7 @@ const createFood = async (req, res) => {
       region,
       isVeg,
       rating,
+      spice,
       available,
     });
 
@@ -39,9 +43,10 @@ const createFood = async (req, res) => {
   }
 };
 
+// GET ALL FOODS
 const getAllFoods = async (req, res) => {
   try {
-    const foods = await Food.find();
+    const foods = await Food.find().sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -55,9 +60,20 @@ const getAllFoods = async (req, res) => {
     });
   }
 };
+
+// GET FOOD BY ID
 const getFoodById = async (req, res) => {
   try {
-    const food = await Food.findById(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Food ID",
+      });
+    }
+
+    const food = await Food.findById(id);
 
     if (!food) {
       return res.status(404).json({
@@ -77,16 +93,23 @@ const getFoodById = async (req, res) => {
     });
   }
 };
+
+// UPDATE FOOD
 const updateFood = async (req, res) => {
   try {
-    const food = await Food.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Food ID",
+      });
+    }
+
+    const food = await Food.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!food) {
       return res.status(404).json({
@@ -107,9 +130,20 @@ const updateFood = async (req, res) => {
     });
   }
 };
+
+// DELETE FOOD
 const deleteFood = async (req, res) => {
   try {
-    const food = await Food.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Food ID",
+      });
+    }
+
+    const food = await Food.findByIdAndDelete(id);
 
     if (!food) {
       return res.status(404).json({
@@ -121,6 +155,7 @@ const deleteFood = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Food deleted successfully",
+      data: food,
     });
   } catch (error) {
     res.status(500).json({
@@ -129,6 +164,7 @@ const deleteFood = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   createFood,
   getAllFoods,
