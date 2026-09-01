@@ -1,49 +1,108 @@
+// const jwt = require("jsonwebtoken");
+// const User = require("../models/User");
+
+// const protect = async (req, res, next) => {
+//   try {
+//     let token;
+
+//     // Check Authorization Header
+//     if (
+//       req.headers.authorization &&
+//       req.headers.authorization.startsWith("Bearer ")
+//     ) {
+//       token = req.headers.authorization.split(" ")[1];
+//     }
+
+//     // No Token
+//     if (!token) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Access denied. No token provided.",
+//       });
+//     }
+
+//     // Verify Token
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+//     // Find user from database
+//     const user = await User.findById(decoded.id).select("-password");
+
+//     if (!user) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "User not found.",
+//       });
+//     }
+
+//     // Attach user to request
+//     req.user = user;
+
+//     next();
+//   } catch (error) {
+//     return res.status(401).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// module.exports = protect;
+
+
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const protect = async (req, res, next) => {
   try {
-    let token;
+    const authHeader = req.headers.authorization;
 
-    // Check Authorization Header
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer ")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    // No Token
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
         message: "Access denied. No token provided.",
       });
     }
 
-    // Verify Token
+    const token = authHeader.split(" ")[1];
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find user from database
     const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "User not found.",
+        message: "User no longer exists.",
       });
     }
 
-    // Attach user to request
     req.user = user;
 
     next();
   } catch (error) {
-    return res.status(401).json({
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token has expired. Please login again.",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication token.",
+      });
+    }
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Authentication failed.",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : undefined,
     });
   }
 };
 
-module.exports = protect;
+module.exports = { protect };

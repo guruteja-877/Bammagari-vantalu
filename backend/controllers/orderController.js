@@ -1,73 +1,90 @@
-const Order = require("../models/Order");
-const Cart = require("../models/Cart");
+const asyncHandler = require("../middleware/asyncHandler");
+const orderService = require("../services/orderService");
+const ApiResponse = require("../utils/ApiResponse");
 
-// Place Order
-const placeOrder = async (req, res) => {
-  try {
-    // Find logged-in user's cart
-    const cart = await Cart.findOne({ user: req.user._id }).populate(
-      "items.food"
-    );
+// @desc Create Order
+// @route POST /api/orders
+// @access Private
+exports.createOrder = asyncHandler(async (req, res) => {
+  const order = await orderService.createOrder(
+    req.user._id,
+    req.body
+  );
 
-    // Check if cart exists
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Cart is empty",
-      });
-    }
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      order,
+      "Order placed successfully."
+    )
+  );
+});
 
-    // Calculate total amount
-    let totalAmount = 0;
+// @desc Get Logged-in User Orders
+// @route GET /api/orders/my-orders
+// @access Private
+exports.getUserOrders = asyncHandler(async (req, res) => {
+  const orders = await orderService.getUserOrders(
+    req.user._id
+  );
 
-    cart.items.forEach((item) => {
-      totalAmount += item.food.price * item.quantity;
-    });
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      orders,
+      "Orders fetched successfully."
+    )
+  );
+});
 
-    // Create Order
-    const order = await Order.create({
-      user: req.user._id,
-      items: cart.items,
-      totalAmount,
-    });
+// @desc Get Order By ID
+// @route GET /api/orders/:id
+// @access Private
+exports.getOrderById = asyncHandler(async (req, res) => {
+  const order = await orderService.getOrderById(
+    req.params.id
+  );
 
-    // Clear Cart
-    cart.items = [];
-    await cart.save();
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      order,
+      "Order fetched successfully."
+    )
+  );
+});
 
-    res.status(201).json({
-      success: true,
-      message: "Order placed successfully",
-      data: order,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-// Get Logged-in User Orders
-const getMyOrders = async (req, res) => {
-  try {
-    const orders = await Order.find({ user: req.user._id })
-      .populate("items.food")
-      .sort({ createdAt: -1 });
+// @desc Get All Orders
+// @route GET /api/orders
+// @access Admin
+exports.getAllOrders = asyncHandler(async (req, res) => {
+  const orders = await orderService.getAllOrders();
 
-    res.status(200).json({
-      success: true,
-      count: orders.length,
-      data: orders,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      orders,
+      "All orders fetched successfully."
+    )
+  );
+});
 
-module.exports = {
-  placeOrder,
-  getMyOrders
-};
+// @desc Update Order Status
+// @route PATCH /api/orders/:id/status
+// @access Admin
+exports.updateOrderStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+
+  const order = await orderService.updateOrderStatus(
+    req.params.id,
+    status
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      order,
+      "Order status updated successfully."
+    )
+  );
+});

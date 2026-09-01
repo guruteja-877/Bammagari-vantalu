@@ -1,174 +1,151 @@
-const mongoose = require("mongoose");
-const Food = require("../models/Food");
+const asyncHandler = require("../middleware/asyncHandler");
+const foodService = require("../services/foodService");
+const ApiResponse = require("../utils/ApiResponse");
 
-// CREATE FOOD
-const createFood = async (req, res) => {
-  try {
-    const {
-      name,
-      description,
-      price,
-      image,
-      category,
-      region,
-      isVeg,
-      rating,
-      spice,
-      available,
-    } = req.body;
+// @desc Create Food
+// @route POST /api/foods
+// @access Admin
+exports.createFood = asyncHandler(async (req, res) => {
+  const food = await foodService.createFood(req.body);
 
-    const food = await Food.create({
-      name,
-      description,
-      price,
-      image,
-      category,
-      region,
-      isVeg,
-      rating,
-      spice,
-      available,
-    });
+  return res.status(201).json(
+    new ApiResponse(201, food, "Food created successfully.")
+  );
+});
 
-    res.status(201).json({
-      success: true,
-      message: "Food added successfully",
-      data: food,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// @desc Get All Foods
+// @route GET /api/foods
+// @access Public
+exports.getFoods = asyncHandler(async (req, res) => {
+  const foods = await foodService.getFoods(req.query);
 
-// GET ALL FOODS
-const getAllFoods = async (req, res) => {
-  try {
-    const foods = await Food.find().sort({ createdAt: -1 });
+  return res.status(200).json(
+    new ApiResponse(200, foods, "Foods fetched successfully.")
+  );
+});
 
-    res.status(200).json({
-      success: true,
-      count: foods.length,
-      data: foods,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// @desc Get Food By ID
+// @route GET /api/foods/:id
+// @access Public
+exports.getFoodById = asyncHandler(async (req, res) => {
+  const food = await foodService.getFoodById(req.params.id);
 
-// GET FOOD BY ID
-const getFoodById = async (req, res) => {
-  try {
-    const { id } = req.params;
+  return res.status(200).json(
+    new ApiResponse(200, food, "Food fetched successfully.")
+  );
+});
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Food ID",
-      });
-    }
+// @desc Update Food
+// @route PUT /api/foods/:id
+// @access Admin
+exports.updateFood = asyncHandler(async (req, res) => {
+  const food = await foodService.updateFood(
+    req.params.id,
+    req.body
+  );
 
-    const food = await Food.findById(id);
+  return res.status(200).json(
+    new ApiResponse(200, food, "Food updated successfully.")
+  );
+});
 
-    if (!food) {
-      return res.status(404).json({
-        success: false,
-        message: "Food not found",
-      });
-    }
+// @desc Delete Food
+// @route DELETE /api/foods/:id
+// @access Admin
+exports.deleteFood = asyncHandler(async (req, res) => {
+  const result = await foodService.deleteFood(req.params.id);
 
-    res.status(200).json({
-      success: true,
-      data: food,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  return res.status(200).json(
+    new ApiResponse(200, result, "Food deleted successfully.")
+  );
+});
 
-// UPDATE FOOD
-const updateFood = async (req, res) => {
-  try {
-    const { id } = req.params;
+// @desc Get Featured Foods
+// @route GET /api/foods/featured
+// @access Public
+exports.getFeaturedFoods = asyncHandler(async (req, res) => {
+  const foods = await foodService.getFeaturedFoods();
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Food ID",
-      });
-    }
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      foods,
+      "Featured foods fetched successfully."
+    )
+  );
+});
 
-    const food = await Food.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+// @desc Get Best Seller Foods
+// @route GET /api/foods/best-sellers
+// @access Public
+exports.getBestSellerFoods = asyncHandler(async (req, res) => {
+  const foods = await foodService.getBestSellerFoods();
 
-    if (!food) {
-      return res.status(404).json({
-        success: false,
-        message: "Food not found",
-      });
-    }
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      foods,
+      "Best seller foods fetched successfully."
+    )
+  );
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Food updated successfully",
-      data: food,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// @desc Get Foods By Category
+// @route GET /api/foods/category/:categoryId
+// @access Public
+exports.getFoodsByCategory = asyncHandler(async (req, res) => {
+  const foods = await foodService.getFoodsByCategory(
+    req.params.categoryId
+  );
 
-// DELETE FOOD
-const deleteFood = async (req, res) => {
-  try {
-    const { id } = req.params;
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      foods,
+      "Category foods fetched successfully."
+    )
+  );
+});
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Food ID",
-      });
-    }
+// @desc Get Foods By Region
+// @route GET /api/foods/region/:region
+// @access Public
+exports.getFoodsByRegion = asyncHandler(async (req, res) => {
+  const foods = await foodService.getFoodsByRegion(
+    req.params.region
+  );
 
-    const food = await Food.findByIdAndDelete(id);
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      foods,
+      "Region foods fetched successfully."
+    )
+  );
+});
 
-    if (!food) {
-      return res.status(404).json({
-        success: false,
-        message: "Food not found",
-      });
-    }
+// @desc Get Veg Foods
+// @route GET /api/foods/veg
+// @access Public
+exports.getVegFoods = asyncHandler(async (req, res) => {
+  const foods = await foodService.getVegFoods();
 
-    res.status(200).json({
-      success: true,
-      message: "Food deleted successfully",
-      data: food,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  return res.status(200).json(
+    new ApiResponse(200, foods, "Veg foods fetched successfully.")
+  );
+});
 
-module.exports = {
-  createFood,
-  getAllFoods,
-  getFoodById,
-  updateFood,
-  deleteFood,
-};
+// @desc Get Non-Veg Foods
+// @route GET /api/foods/non-veg
+// @access Public
+exports.getNonVegFoods = asyncHandler(async (req, res) => {
+  const foods = await foodService.getNonVegFoods();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      foods,
+      "Non-veg foods fetched successfully."
+    )
+  );
+});

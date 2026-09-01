@@ -1,206 +1,93 @@
-const Cart = require("../models/Cart");
-const Food = require("../models/Food");
+const asyncHandler = require("../middleware/asyncHandler");
+const cartService = require("../services/cartService");
+const ApiResponse = require("../utils/ApiResponse");
 
-// Add Food to Cart
-const addToCart = async (req, res) => {
-  try {
-    const { foodId, quantity } = req.body;
+// @desc Get Logged-in User Cart
+// @route GET /api/cart
+// @access Private
+exports.getCart = asyncHandler(async (req, res) => {
+  const cart = await cartService.getCart(req.user._id);
 
-    // Check if food exists
-    const food = await Food.findById(foodId);
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      cart,
+      "Cart fetched successfully."
+    )
+  );
+});
 
-    if (!food) {
-      return res.status(404).json({
-        success: false,
-        message: "Food not found",
-      });
-    }
+// @desc Add Item To Cart
+// @route POST /api/cart
+// @access Private
+exports.addToCart = asyncHandler(async (req, res) => {
+  const { foodId, quantity } = req.body;
 
-    // Find user's cart
-    let cart = await Cart.findOne({ user: req.user._id });
+  const cart = await cartService.addToCart(
+    req.user._id,
+    foodId,
+    quantity
+  );
 
-    // Create cart if it doesn't exist
-    if (!cart) {
-      cart = await Cart.create({
-        user: req.user._id,
-        items: [],
-      });
-    }
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      cart,
+      "Item added to cart successfully."
+    )
+  );
+});
 
-    // Check if food already exists in cart
-    const itemIndex = cart.items.findIndex(
-      (item) => item.food.toString() === foodId
-    );
+// @desc Update Cart Item Quantity
+// @route PUT /api/cart
+// @access Private
+exports.updateQuantity = asyncHandler(async (req, res) => {
+  const { foodId, quantity } = req.body;
 
-    if (itemIndex > -1) {
-      // Increase quantity
-      cart.items[itemIndex].quantity += quantity || 1;
-    } else {
-      // Add new item
-      cart.items.push({
-        food: foodId,
-        quantity: quantity || 1,
-      });
-    }
+  const cart = await cartService.updateQuantity(
+    req.user._id,
+    foodId,
+    quantity
+  );
 
-    await cart.save();
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      cart,
+      "Cart updated successfully."
+    )
+  );
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Food added to cart",
-      data: cart,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-// Get Logged-in User Cart
-const getCart = async (req, res) => {
-  try {
-    const cart = await Cart.findOne({ user: req.user._id })
-      .populate("items.food");
+// @desc Remove Item From Cart
+// @route DELETE /api/cart/:foodId
+// @access Private
+exports.removeItem = asyncHandler(async (req, res) => {
+  const cart = await cartService.removeItem(
+    req.user._id,
+    req.params.foodId
+  );
 
-    if (!cart) {
-      return res.status(200).json({
-        success: true,
-        message: "Cart is empty",
-        data: {
-          items: [],
-        },
-      });
-    }
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      cart,
+      "Item removed from cart successfully."
+    )
+  );
+});
 
-    res.status(200).json({
-      success: true,
-      data: cart,
-    });
+// @desc Clear Cart
+// @route DELETE /api/cart
+// @access Private
+exports.clearCart = asyncHandler(async (req, res) => {
+  const result = await cartService.clearCart(req.user._id);
 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-// Update Cart Item Quantity
-const updateCartItem = async (req, res) => {
-  try {
-    const { foodId } = req.params;
-    const { quantity } = req.body;
-
-    if (quantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity must be at least 1",
-      });
-    }
-
-    const cart = await Cart.findOne({ user: req.user._id });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found",
-      });
-    }
-
-    const item = cart.items.find(
-      (item) => item.food.toString() === foodId
-    );
-
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Food not found in cart",
-      });
-    }
-
-    item.quantity = quantity;
-
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Cart updated successfully",
-      data: cart,
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-// Remove Item From Cart
-const removeCartItem = async (req, res) => {
-  try {
-    const { foodId } = req.params;
-
-    const cart = await Cart.findOne({ user: req.user._id });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found",
-      });
-    }
-
-    cart.items = cart.items.filter(
-      (item) => item.food.toString() !== foodId
-    );
-
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Item removed from cart",
-      data: cart,
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-// Clear Cart
-const clearCart = async (req, res) => {
-  try {
-    const cart = await Cart.findOne({ user: req.user._id });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found",
-      });
-    }
-
-    cart.items = [];
-
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Cart cleared successfully",
-      data: cart,
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-module.exports = {
-  addToCart,
-  getCart,
-  updateCartItem,
-  removeCartItem,
-  clearCart,
-};
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      result,
+      "Cart cleared successfully."
+    )
+  );
+});

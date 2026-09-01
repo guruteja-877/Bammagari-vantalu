@@ -1,17 +1,32 @@
 const express = require("express");
 const router = express.Router();
 
-const protect = require("../middleware/authMiddleware");
-
+const authController = require("../controllers/authController");
+const { protect } = require("../middleware/authMiddleware");
+const validate = require("../middleware/validate");
 const {
-  registerUser,
-  loginUser,
-  getProfile,
-} = require("../controllers/authController");
+  registerValidation,
+  loginValidation,
+} = require("../validations/authValidation");
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+// Public Routes
+router.post(
+  "/register",
+  validate(registerValidation),
+  authController.register
+);
 
-router.get("/profile", protect, getProfile);
+router.post(
+  "/login",
+  validate(loginValidation),
+  authController.login
+);
+
+// Private Routes
+router.get(
+  "/profile",
+  protect,
+  authController.getProfile
+);
 
 module.exports = router;
