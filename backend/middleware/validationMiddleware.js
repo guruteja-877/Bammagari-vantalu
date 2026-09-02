@@ -1,20 +1,26 @@
 const { validationResult } = require("express-validator");
 
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
+const validate = (validations) => {
+  return async (req, res, next) => {
+    await Promise.all(
+      validations.map((validation) => validation.run(req))
+    );
 
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      message: "Validation failed.",
-      errors: errors.array().map((error) => ({
-        field: error.path,
-        message: error.msg,
-      })),
-    });
-  }
+    const errors = validationResult(req);
 
-  next();
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed.",
+        errors: errors.array().map((error) => ({
+          field: error.path,
+          message: error.msg,
+        })),
+      });
+    }
+
+    next();
+  };
 };
 
 module.exports = validate;

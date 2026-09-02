@@ -3,7 +3,7 @@ const router = express.Router();
 
 const orderController = require("../controllers/orderController");
 const { protect, authorize } = require("../middleware/authMiddleware");
-const validate = require("../middleware/validate");
+const validate = require("../middleware/validationMiddleware");
 
 const {
   createOrderValidation,

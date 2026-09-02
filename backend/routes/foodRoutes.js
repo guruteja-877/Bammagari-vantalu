@@ -4,7 +4,7 @@ const router = express.Router();
 const foodController = require("../controllers/foodController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
-const validate = require("../middleware/validate");
+const validate = require("../middleware/validationMiddleware");
 
 const {
   createFoodValidation,

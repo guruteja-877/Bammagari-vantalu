@@ -3,7 +3,7 @@ const router = express.Router();
 
 const reviewController = require("../controllers/reviewController");
 const { protect } = require("../middleware/authMiddleware");
-const validate = require("../middleware/validate");
+const validate = require("../middleware/validationMiddleware");
 
 const {
   createReviewValidation,

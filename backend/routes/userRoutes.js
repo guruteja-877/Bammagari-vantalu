@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-const userController = require("../controllers/userController");
+const userController = require("../controllers/userContoller");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
-const validate = require("../middleware/validate");
+const validate = require("../middleware/validationMiddleware");
 
 const {
   updateProfileValidation,

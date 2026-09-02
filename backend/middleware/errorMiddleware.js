@@ -1,3 +1,9 @@
+const notFound = (req, res, next) => {
+  const error = new Error(`Not Found - ${req.originalUrl}`);
+  res.status(404);
+  next(error);
+};
+
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || res.statusCode;
 
@@ -15,7 +21,7 @@ const errorHandler = (err, req, res, next) => {
     response.stack = err.stack;
   }
 
-  // Handle Mongoose CastError (Invalid ObjectId)
+  // Handle Mongoose CastError
   if (err.name === "CastError") {
     statusCode = 400;
     response.message = "Invalid resource ID.";
@@ -50,4 +56,7 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(response);
 };
 
-module.exports = errorHandler;
+module.exports = {
+  notFound,
+  errorHandler,
+};
